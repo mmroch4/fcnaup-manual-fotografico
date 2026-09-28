@@ -30,8 +30,18 @@ python3 -m http.server 8000
 
 ## Publicar
 
-A pasta `site/` pode ser publicada tal como está no GitHub Pages, Netlify, Cloudflare Pages ou
-em qualquer servidor de ficheiros estáticos (~19 MB, quase tudo fotografias).
+### Vercel (recomendado)
+
+O `vercel.json` já configura o projeto como site estático servido a partir de `site/`
+(sem comando de build). Basta importar o repositório em [vercel.com/new](https://vercel.com/new)
+e carregar em **Deploy** — cada `git push` para `main` gera um novo deploy.
+
+Pela linha de comandos: `npx vercel` (pré-visualização) e `npx vercel --prod` (produção).
+
+### Outros serviços
+
+A pasta `site/` pode ser publicada tal como está em qualquer servidor de ficheiros estáticos
+(~19 MB, quase tudo fotografias).
 
 > O manual indica que as imagens não podem ser publicadas sem autorização prévia dos autores
 > (geral@ian-af.up.pt). Obtenha essa autorização antes de pôr o site online.
