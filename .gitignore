@@ -1,0 +1,9 @@
+# PDF original do manual (protegido por direitos de autor; necessário apenas para regenerar os dados)
+*.pdf
+
+# Ambiente Python
+.venv/
+__pycache__/
+
+# Sistema
+.DS_Store

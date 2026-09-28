@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Manual Fotográfico IAN-AF</title>
+  <meta name="description" content="Pesquisa rápida no Manual Fotográfico de Quantificação de Alimentos IAN-AF 2015-2016: fotos, pesos, composição nutricional e montagem de refeições. Feito para estudantes da FCNAUP.">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="color-scheme" content="light">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%231f6b4a'/%3E%3Ccircle cx='32' cy='32' r='17' fill='none' stroke='%23fff' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='8' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Saltar para o conteúdo</a>
+
+  <header class="top">
+    <div class="top__inner">
+      <a class="brand" href="#/" aria-label="Início — Manual Fotográfico IAN-AF">
+        <span class="brand__logo" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="17"/><circle cx="32" cy="32" r="8"/></svg></span>
+        <span class="brand__text"><strong>Manual Fotográfico</strong><small>IAN-AF · Quantificação de alimentos</small></span>
+      </a>
+      <div class="search" role="search">
+        <svg class="search__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <input id="q" type="search" placeholder="Pesquisar alimento ou código" autocomplete="off" spellcheck="false" aria-label="Pesquisar alimento" enterkeyhint="search">
+        <kbd class="search__kbd" aria-hidden="true">/</kbd>
+        <button id="clear" class="search__clear" type="button" aria-label="Limpar pesquisa" hidden><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <nav class="nav" aria-label="Secções" id="nav">
+        <a href="#/" data-tab="foods">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Alimentos</span></a>
+        <a href="#/refeicao" data-tab="meal">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="7"/><path d="M3 4v5a2 2 0 0 0 2 2M3 4v16M21 4c-1.5 0-2 2-2 5s1 3 2 3v8"/></svg><span>Refeição</span><b class="nav__badge" id="meal-badge" hidden></b></a>
+        <a href="#/favoritos" data-tab="favs">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></svg><span>Favoritos</span></a>
+        <a href="#/medidas" data-tab="measures">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l-1.5 17a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1z"/><path d="M6.6 9h10.8"/></svg><span>Medidas</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1"></main>
+
+  <footer class="foot">
+    <nav class="foot__links" aria-label="Rodapé"><a href="#/sobre">Sobre o site</a></nav>
+    <p class="foot__credit">Site criado por <a href="https://miguelrocha.dev" target="_blank" rel="noopener">Miguel Rocha</a> · <a href="https://miguelrocha.dev" target="_blank" rel="noopener">miguelrocha.dev</a></p>
+    <p>Feito para ajudar os estudantes da FCNAUP a utilizar o Manual Fotográfico de Quantificação de Alimentos.</p>
+    <p class="foot__src">Fotografias e dados: Torres D, <i>et al.</i> <i>Inquérito Alimentar Nacional e de Atividade Física, IAN-AF 2015-2016: Manual Fotográfico de Quantificação de Alimentos.</i> Universidade do Porto, 2017. ISBN 978-989-746-182-8. Todos os direitos das imagens pertencem aos autores.</p>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <dialog id="zoom" class="zoom" aria-label="Fotografia ampliada">
+    <img alt="">
+    <p class="zoom__cap"></p>
+    <button class="zoom__prev" type="button" aria-label="Foto anterior">‹</button>
+    <button class="zoom__next" type="button" aria-label="Foto seguinte">›</button>
+    <button class="zoom__close" type="button" aria-label="Fechar">×</button>
+  </dialog>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
