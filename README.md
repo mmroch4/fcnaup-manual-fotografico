@@ -12,28 +12,30 @@ Criado por [Miguel Rocha](https://miguelrocha.dev).
 site/            ← é esta pasta que se publica
   index.html
   style.css
-  app.js         pesquisa, calculadora, favoritos, navegação
+  app.js         pesquisa, calculadora, refeições, favoritos, navegação (History API)
   data.js        dados extraídos do PDF (gerado)
   img/           fotografias em WebP (geradas)
 tools/extract.py extrai fotos e tabelas do PDF para site/
+tools/serve.py   servidor local com fallback para index.html
 ```
 
 ## Ver localmente
 
 ```bash
-cd site
-python3 -m http.server 8000
-# abrir http://localhost:8000
+python3 tools/serve.py        # http://localhost:8000
 ```
 
-(Abrir o `index.html` diretamente também funciona, porque os dados são carregados como script.)
+O site usa URLs limpas (`/serie/MQA001`, `/refeicao`, `/medidas/MC01`), por isso o servidor tem
+de devolver o `index.html` em qualquer rota — é o que `tools/serve.py` faz (e o `vercel.json` em
+produção). O `python3 -m http.server` simples e abrir o `index.html` diretamente do disco não
+funcionam. Links antigos no formato `/#/serie/MQA001` são convertidos automaticamente.
 
 ## Publicar
 
 ### Vercel (recomendado)
 
 O `vercel.json` já configura o projeto como site estático servido a partir de `site/`
-(sem comando de build). Basta importar o repositório em [vercel.com/new](https://vercel.com/new)
+(sem comando de build), com um *rewrite* que devolve o `index.html` nas rotas da aplicação. Basta importar o repositório em [vercel.com/new](https://vercel.com/new)
 e carregar em **Deploy** — cada `git push` para `main` gera um novo deploy.
 
 Pela linha de comandos: `npx vercel` (pré-visualização) e `npx vercel --prod` (produção).

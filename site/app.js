@@ -271,7 +271,7 @@
       <li class="row">
         <img class="row__img" src="${s.thumb}" alt="" loading="lazy" width="360" height="270">
         <div class="row__body">
-          <div class="row__name"><a href="#/serie/${s.code}">${esc(s.name)}</a></div>
+          <div class="row__name"><a href="/serie/${s.code}">${esc(s.name)}</a></div>
           <div class="row__meta">${favs.has(s.code) ? '<span class="star" aria-label="Favorito">★</span> ' : ""}${s.code} · ${s.total.length} fotos</div>
           <div class="row__meta">${nf0.format(Math.min(...ts))}–${nf0.format(Math.max(...ts))} g · ${nf0.format(Math.min(...ks))}–${nf0.format(Math.max(...ks))} kcal</div>
         </div>
@@ -281,7 +281,7 @@
   const list = (items) => `<ul class="list">${items.map(row).join("")}</ul>`;
 
   const measureCard = (m) => `
-    <a class="mcard" href="#/medidas/${m.code}">
+    <a class="mcard" href="/medidas/${m.code}">
       <img src="${m.photo}" alt="" loading="lazy">
       <div><b>${m.code} – ${esc(m.name)}</b><span>${m.items.map((i) => `${i.letter}: ${esc(i.name)}`).join(" · ")}</span></div>
     </a>`;
@@ -334,7 +334,7 @@
     clearTimeout(toastTimer);
     toastUndo = undo || null;
     // não mostra "Ver" se já estamos na página de destino
-    const showLink = link && link.href !== location.hash;
+    const showLink = link && link.href !== location.pathname;
     $toast.innerHTML = `<p>${message}</p>${undo ? '<button type="button" data-toast="undo">Anular</button>' : ""}${showLink ? `<a href="${link.href}">${esc(link.label)}</a>` : ""}`;
     $toast.hidden = false;
     toastTimer = setTimeout(() => { $toast.hidden = true; }, 5000);
@@ -355,7 +355,7 @@
     saveMeals();
     const p = portion(s, letter, mult);
     toast(`<b>${esc(s.name)}</b> adicionado a <b>${esc(mealName(meal))}</b> · ${gramsValue ? `${grams(gramsValue)} g` : `${fracLabel(mult)} × foto ${letter}`} · ${nf0.format(p.nut[N.kcal])} kcal`, {
-      link: { href: `#/refeicao/${meal.id}`, label: "Ver" },
+      link: { href: `/refeicao/${meal.id}`, label: "Ver" },
       undo: () => { meal.items = meal.items.filter((x) => x.id !== item.id); saveMeals(); render({ keepScroll: true }); },
     });
   }
@@ -433,7 +433,7 @@
       ${infoDismissed ? "" : infoBanner(true)}
       ${rec.length ? `
         <div class="section-title"><h2>Vistos recentemente</h2></div>
-        <div class="recent">${rec.map((s) => `<a href="#/serie/${s.code}"><img src="${s.thumb}" alt="" loading="lazy" width="360" height="270"><span>${esc(s.name)}</span></a>`).join("")}</div>` : ""}
+        <div class="recent">${rec.map((s) => `<a href="/serie/${s.code}"><img src="${s.thumb}" alt="" loading="lazy" width="360" height="270"><span>${esc(s.name)}</span></a>`).join("")}</div>` : ""}
       <div class="section-title"><h2>Alimentos e receitas</h2><span>${items.length} séries</span></div>
       <div class="chips" role="toolbar" aria-label="Filtrar por categoria">${chips}</div>
       ${activeTargetHint()}
@@ -443,7 +443,7 @@
   /** Indica para onde vai o "+" da lista (padrão Yazio: refeição selecionada no topo). */
   function activeTargetHint() {
     const m = activeMeal();
-    return `<p class="target">${I.plate}<span>O <b>+</b> adiciona a ${m ? `<a href="#/refeicao/${m.id}">${esc(mealName(m))}</a>` : "uma nova refeição"}</span>${meals.length > 1 ? `
+    return `<p class="target">${I.plate}<span>O <b>+</b> adiciona a ${m ? `<a href="/refeicao/${m.id}">${esc(mealName(m))}</a>` : "uma nova refeição"}</span>${meals.length > 1 ? `
       <select data-action="target-meal" aria-label="Refeição de destino">${meals.map((x) => `<option value="${x.id}"${x.id === activeId ? " selected" : ""}>${esc(mealName(x))}</option>`).join("")}</select>` : ""}</p>`;
   }
 
@@ -463,7 +463,7 @@
   function viewFavs() {
     const items = [...favs].map((c) => byCode.get(c)).filter(Boolean);
     if (!items.length) {
-      return `<div class="empty"><div class="empty__icon">${I.star}</div><strong>Ainda sem favoritos</strong>Abra um alimento e toque na estrela para o guardar aqui. Os favoritos ficam guardados apenas neste navegador.<br><a class="btn btn--primary" href="#/">${I.search} Pesquisar alimentos</a></div>`;
+      return `<div class="empty"><div class="empty__icon">${I.star}</div><strong>Ainda sem favoritos</strong>Abra um alimento e toque na estrela para o guardar aqui. Os favoritos ficam guardados apenas neste navegador.<br><a class="btn btn--primary" href="/">${I.search} Pesquisar alimentos</a></div>`;
     }
     return `<div class="section-title"><h2>Favoritos</h2><span>${items.length}</span></div>${activeTargetHint()}${list(items)}`;
   }
@@ -619,7 +619,7 @@
             ${meals.map((m) => {
               const t = mealTotals([m]);
               const photos = m.items.slice(0, 4).map((it) => photoOf(byCode.get(it.code), it.letter)).filter(Boolean);
-              return `<li><a class="mealcard" href="#/refeicao/${m.id}">
+              return `<li><a class="mealcard" href="/refeicao/${m.id}">
                 <div class="mealcard__thumbs">${photos.length ? photos.map((src) => `<img src="${src}" alt="" loading="lazy">`).join("") : `<span>${I.plate}</span>`}</div>
                 <div class="mealcard__body">
                   <b>${esc(mealName(m))}${m.id === activeId ? ' <span class="pill-active">ativa</span>' : ""}</b>
@@ -695,7 +695,7 @@
               return `<li class="item" data-item="${it.id}">
                 ${ph ? `<img src="${ph}" alt="" loading="lazy">` : '<div class="ph"></div>'}
                 <div>
-                  <div class="item__name"><a href="#/serie/${s.code}">${esc(s.name)}</a></div>
+                  <div class="item__name"><a href="/serie/${s.code}">${esc(s.name)}</a></div>
                   <div class="item__meta">${grams(p.total)} g · edível ${grams(p.edible)} g</div>
                   <div class="item__controls">
                     <select data-item-letter aria-label="Fotografia">${rowLetters(s).map((L) => `<option value="${L}"${L === it.letter ? " selected" : ""}>Foto ${L}</option>`).join("")}</select>
@@ -807,15 +807,27 @@
       </article>`;
   }
 
-  const viewNotFound = () => `<div class="empty"><strong>Página não encontrada</strong><a class="btn" href="#/">Voltar à lista de alimentos</a></div>`;
+  const viewNotFound = () => `<div class="empty"><strong>Página não encontrada</strong><a class="btn" href="/">Voltar à lista de alimentos</a></div>`;
 
   // ------------------------------------------------------------------ router
   let current = { name: "foods", tab: "foods", arg: null };
   let navigatedInside = false;
   const scrollPositions = {};
 
+  // URLs limpas (/serie/MQA001) com a History API; o servidor devolve index.html em qualquer rota.
+  history.scrollRestoration = "manual";
+  // links antigos no formato /#/serie/MQA001 continuam a funcionar
+  if (location.hash.startsWith("#/")) history.replaceState(null, "", location.hash.slice(1));
+
+  function navigate(path) {
+    if (path === location.pathname) return;
+    history.pushState(null, "", path);
+    navigatedInside = true;
+    onRoute();
+  }
+
   function parseRoute() {
-    const [, name = "", arg = ""] = location.hash.replace(/^#/, "").split("/");
+    const [, name = "", arg = ""] = location.pathname.split("/");
     switch (name) {
       case "serie": return { name: "serie", tab: "foods", arg: decodeURIComponent(arg).toUpperCase() };
       case "refeicao": return arg ? { name: "meal", tab: "meal", arg: decodeURIComponent(arg) } : { name: "meals", tab: "meal" };
@@ -858,13 +870,30 @@
     scrollPositions[`${current.name}/${current.arg ?? ""}`] = window.scrollY;
     current = parseRoute();
     render();
-    $toast.querySelector(`a[href="${CSS.escape(location.hash)}"]`)?.remove(); // já estamos na página do link
+    $toast.querySelector(`a[href="${CSS.escape(location.pathname)}"]`)?.remove(); // já estamos na página do link
     // volta à posição anterior das listas (útil no telemóvel ao regressar de um alimento)
     const saved = scrollPositions[`${current.name}/${current.arg ?? ""}`];
     window.scrollTo(0, ["foods", "favs", "measures", "meals"].includes(current.name) && saved ? saved : 0);
   }
 
-  window.addEventListener("hashchange", () => { navigatedInside = true; onRoute(); });
+  window.addEventListener("popstate", onRoute);
+  // link antigo (/#/…) aberto com o site já carregado: converte para o caminho limpo
+  window.addEventListener("hashchange", () => {
+    if (!location.hash.startsWith("#/")) return;
+    history.replaceState(null, "", location.hash.slice(1));
+    navigatedInside = true;
+    onRoute();
+  });
+
+  // links internos navegam sem recarregar a página (exceto com Ctrl/⌘/Shift ou em nova aba)
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest("a[href]");
+    if (!a || a.target === "_blank" || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const url = new URL(a.href);
+    if (url.origin !== location.origin) return;
+    e.preventDefault();
+    navigate(url.pathname);
+  });
 
   // ------------------------------------------------------------------ eventos
   let typingTimer;
@@ -872,7 +901,7 @@
     $clear.hidden = !$q.value;
     clearTimeout(typingTimer);
     typingTimer = setTimeout(() => {
-      if (current.name !== "foods") { location.hash = "#/"; return; }
+      if (current.name !== "foods") { navigate("/"); return; }
       render();
     }, 80);
   });
@@ -945,7 +974,7 @@
     if (d.mstep) { measureState.mult = Math.max(1, measureState.mult + Number(d.mstep)); rerender(); return; }
     if (d.newMeal !== undefined) {
       const meal = createMeal(uniqueName(d.newMeal || `Refeição ${meals.length + 1}`));
-      location.hash = `#/refeicao/${meal.id}`;
+      navigate(`/refeicao/${meal.id}`);
       return;
     }
     if (d.remove && openMeal) {
@@ -957,8 +986,8 @@
     }
 
     switch (d.action) {
-      case "back": navigatedInside ? history.back() : (location.hash = current.name === "measure" ? "#/medidas" : "#/"); break;
-      case "to-meals": location.hash = "#/refeicao"; break;
+      case "back": navigatedInside ? history.back() : navigate(current.name === "measure" ? "/medidas" : "/"); break;
+      case "to-meals": navigate("/refeicao"); break;
       case "fav": toggleFav(current.arg); rerender(); break;
       case "zoom": openZoom(); break;
       case "dismiss-info": infoDismissed = true; store.set("mqa:info-dismissed", true); rerender(); break;
@@ -970,7 +999,7 @@
         break;
       }
       case "find":
-        location.hash = "#/";
+        navigate("/");
         setTimeout(() => { $q.focus(); window.scrollTo(0, 0); }, 50);
         break;
       case "copy-meal":
@@ -984,7 +1013,7 @@
         meals.splice(meals.indexOf(openMeal) + 1, 0, copy);
         activeId = copy.id;
         saveMeals();
-        location.hash = `#/refeicao/${copy.id}`;
+        navigate(`/refeicao/${copy.id}`);
         toast(`Refeição duplicada: <b>${esc(copy.name)}</b>`);
         break;
       }
@@ -993,7 +1022,7 @@
         meals.splice(idx, 1);
         if (activeId === openMeal.id) activeId = meals[Math.max(0, idx - 1)]?.id ?? null;
         saveMeals();
-        location.hash = "#/refeicao";
+        navigate("/refeicao");
         toast(`Refeição <b>${esc(mealName(openMeal))}</b> apagada`, {
           undo: () => { meals.splice(idx, 0, openMeal); activeId = openMeal.id; saveMeals(); render(); },
         });
@@ -1007,7 +1036,7 @@
     if (el.dataset.action === "target-meal") {
       if (el.value === "__new") {
         const meal = createMeal();
-        toast(`Refeição <b>${esc(meal.name)}</b> criada — os alimentos vão para ela`, { link: { href: `#/refeicao/${meal.id}`, label: "Ver" } });
+        toast(`Refeição <b>${esc(meal.name)}</b> criada — os alimentos vão para ela`, { link: { href: `/refeicao/${meal.id}`, label: "Ver" } });
       } else if (el.value) {
         activeId = el.value; saveMeals();
       }
@@ -1032,7 +1061,7 @@
         dest.items.push(it);
         saveMeals(); render({ keepScroll: true });
         toast(`${esc(s.name)} movido para <b>${esc(mealName(dest))}</b>`, {
-          link: { href: `#/refeicao/${dest.id}`, label: "Ver" },
+          link: { href: `/refeicao/${dest.id}`, label: "Ver" },
           undo: () => { dest.items.splice(dest.items.indexOf(it), 1); meal.items.splice(idx, 0, it); saveMeals(); render({ keepScroll: true }); },
         });
         return;
