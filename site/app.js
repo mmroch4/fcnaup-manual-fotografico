@@ -8,6 +8,7 @@
     { v: 1.5, t: "1½" }, { v: 2, t: "2" }, { v: 3, t: "3" },
   ];
   const MEASURE_FRACTIONS = ["¼", "½", "¾", "1"];
+  const MEAL_PRESETS = ["Pequeno-almoço", "Meio da manhã", "Almoço", "Lanche", "Jantar", "Ceia"];
   // índices em cada linha de s.nutrition (ordem da Tabela 3 do manual)
   const N = { kcal: 0, prot: 1, hc: 2, acu: 3, gord: 4, ags: 5, fibra: 6 };
 
@@ -48,15 +49,13 @@
     set(key, value) {
       try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* armazenamento indisponível */ }
     },
+    remove(key) {
+      try { localStorage.removeItem(key); } catch { /* armazenamento indisponível */ }
+    },
   };
   const favs = new Set(store.get("mqa:favs", []));
   let recent = store.get("mqa:recent", []);
-  let meal = store.get("mqa:meal", { name: "", items: [], savedId: null });
-  let savedMeals = store.get("mqa:meals", []);
   let infoDismissed = store.get("mqa:info-dismissed", false);
-
-  // descarta itens de séries que já não existam (ex.: dados regenerados)
-  meal.items = (meal.items || []).filter((it) => byCode.has(it.code));
 
   function toggleFav(code) {
     favs.has(code) ? favs.delete(code) : favs.add(code);
@@ -66,13 +65,64 @@
     recent = [code, ...recent.filter((c) => c !== code)].slice(0, 12);
     store.set("mqa:recent", recent);
   }
-  function saveMeal() {
-    store.set("mqa:meal", meal);
+
+  // ------------------------------------------------------------------ refeições (estado)
+  /**
+   * Carrega as refeições. Versões anteriores tinham uma refeição "atual" (mqa:meal) e cópias
+   * guardadas (mqa:meals); a atual é fundida na lista e a chave antiga é removida.
+   */
+  function loadMeals() {
+    const clean = (items) => (items || []).filter((it) => byCode.has(it.code));
+    const list = store.get("mqa:meals", []).map((m) => ({ id: m.id || uid(), name: m.name || "", items: clean(m.items) }));
+    const legacy = store.get("mqa:meal", null);
+    if (legacy?.items?.length) {
+      const existing = list.find((m) => m.id === legacy.savedId);
+      if (existing) Object.assign(existing, { name: legacy.name || existing.name, items: clean(legacy.items) });
+      else list.unshift({ id: uid(), name: legacy.name || "Refeição", items: clean(legacy.items) });
+    }
+    store.remove("mqa:meal");
+    return list;
+  }
+  let meals = loadMeals();
+  let activeId = store.get("mqa:active-meal", null);
+  if (!meals.some((m) => m.id === activeId)) activeId = meals[0]?.id ?? null;
+
+  const mealById = (id) => meals.find((m) => m.id === id);
+  const activeMeal = () => mealById(activeId) ?? null;
+  const mealName = (m) => m.name.trim() || "Refeição sem nome";
+
+  function saveMeals() {
+    store.set("mqa:meals", meals);
+    store.set("mqa:active-meal", activeId);
     updateBadge();
   }
   function updateBadge() {
-    $badge.hidden = !meal.items.length;
-    $badge.textContent = meal.items.length;
+    const n = meals.reduce((acc, m) => acc + m.items.length, 0);
+    $badge.hidden = !n;
+    $badge.textContent = n;
+  }
+
+  /** "Almoço", ou "Almoço 2" se já existir. */
+  function uniqueName(base) {
+    const names = new Set(meals.map((m) => m.name.trim()));
+    if (!names.has(base)) return base;
+    let i = 2;
+    while (names.has(`${base} ${i}`)) i++;
+    return `${base} ${i}`;
+  }
+  /** Nome sugerido pela hora do dia. */
+  function defaultMealName() {
+    const d = new Date();
+    const h = d.getHours() + d.getMinutes() / 60;
+    const base = h < 10.5 ? "Pequeno-almoço" : h < 12 ? "Meio da manhã" : h < 15 ? "Almoço" : h < 18.5 ? "Lanche" : h < 22 ? "Jantar" : "Ceia";
+    return uniqueName(base);
+  }
+  function createMeal(name = defaultMealName()) {
+    const meal = { id: uid(), name, items: [] };
+    meals.push(meal);
+    activeId = meal.id;
+    saveMeals();
+    return meal;
   }
 
   /** Letra → caminho da foto (algumas séries têm menos fotos do que linhas na tabela). */
@@ -105,14 +155,15 @@
     plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
     check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
     back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>',
+    chevron: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>',
     star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></svg>',
     x: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
     zoom: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>',
     info: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>',
     plate: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="7"/><path d="M3 4v5a2 2 0 0 0 2 2M3 4v16M21 4c-1.5 0-2 2-2 5s1 3 2 3v8"/></svg>',
     search: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>',
-    save: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></svg>',
     copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>',
+    duplicate: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M14.5 11.5v6M11.5 14.5h6M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>',
     trash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
   };
 
@@ -214,6 +265,8 @@
 
   function row(s) {
     const ts = s.total, ks = s.nutrition.map((n) => n[N.kcal]);
+    const target = activeMeal();
+    const addLabel = `Adicionar ${s.name} (foto ${defaultLetter(s)}) a ${target ? mealName(target) : "uma nova refeição"}`;
     return `
       <li class="row">
         <img class="row__img" src="${s.thumb}" alt="" loading="lazy" width="360" height="270">
@@ -222,7 +275,7 @@
           <div class="row__meta">${favs.has(s.code) ? '<span class="star" aria-label="Favorito">★</span> ' : ""}${s.code} · ${s.total.length} fotos</div>
           <div class="row__meta">${nf0.format(Math.min(...ts))}–${nf0.format(Math.max(...ts))} g · ${nf0.format(Math.min(...ks))}–${nf0.format(Math.max(...ks))} kcal</div>
         </div>
-        <button class="row__add" type="button" data-add="${s.code}" aria-label="Adicionar ${esc(s.name)} à refeição (foto ${defaultLetter(s)})" title="Adicionar à refeição (foto ${defaultLetter(s)})">${I.plus}</button>
+        <button class="row__add" type="button" data-add="${s.code}" aria-label="${esc(addLabel)}" title="${esc(addLabel)}">${I.plus}</button>
       </li>`;
   }
   const list = (items) => `<ul class="list">${items.map(row).join("")}</ul>`;
@@ -233,20 +286,28 @@
       <div><b>${m.code} – ${esc(m.name)}</b><span>${m.items.map((i) => `${i.letter}: ${esc(i.name)}`).join(" · ")}</span></div>
     </a>`;
 
-  /** Energia em destaque + barra de distribuição energética + macros (padrão BitePal/Alma). */
-  function summary(nut, sideText = "", flat = false) {
+  /** Percentagem da energia vinda de proteína, hidratos e gordura (fatores 4/4/9). */
+  function energySplit(nut) {
     const e = { prot: nut[N.prot] * 4, hc: nut[N.hc] * 4, gord: nut[N.gord] * 9 };
     const sum = e.prot + e.hc + e.gord || 1;
-    const pct = (k) => Math.round((e[k] / sum) * 100);
+    return { prot: Math.round((e.prot / sum) * 100), hc: Math.round((e.hc / sum) * 100), gord: Math.round((e.gord / sum) * 100) };
+  }
+  const macroBar = (nut, small = false) => {
+    const pct = energySplit(nut);
+    return `<div class="macrobar${small ? " macrobar--sm" : ""}" role="img" aria-label="Distribuição da energia: proteína ${pct.prot}%, hidratos de carbono ${pct.hc}%, gordura ${pct.gord}%">
+      <i style="width:${pct.prot}%;background:var(--prot)"></i><i style="width:${pct.hc}%;background:var(--hc)"></i><i style="width:${pct.gord}%;background:var(--gord)"></i></div>`;
+  };
+
+  /** Energia em destaque + barra de distribuição energética + macros (padrão BitePal/Alma). */
+  function summary(nut, sideText = "", flat = false) {
+    const pct = energySplit(nut);
     const macro = (k, label, color) => `
       <div class="macro" style="--c:var(${color})"><small>${label}</small>
-        <strong>${nf1.format(nut[N[k]])}<span>g</span></strong><em>${pct(k)}% da energia</em></div>`;
+        <strong>${nf1.format(nut[N[k]])}<span>g</span></strong><em>${pct[k]}% da energia</em></div>`;
     return `
       <div class="summary${flat ? " summary--flat" : ""}">
         <div class="summary__kcal"><strong>${nf0.format(nut[N.kcal])}<small>kcal</small></strong><span>${sideText}</span></div>
-        <div class="macrobar" role="img" aria-label="Distribuição da energia: proteína ${pct("prot")}%, hidratos de carbono ${pct("hc")}%, gordura ${pct("gord")}%">
-          <i style="width:${pct("prot")}%;background:var(--prot)"></i><i style="width:${pct("hc")}%;background:var(--hc)"></i><i style="width:${pct("gord")}%;background:var(--gord)"></i>
-        </div>
+        ${macroBar(nut)}
         <div class="macros">${macro("prot", "Proteína", "--prot")}${macro("hc", "Hidratos", "--hc")}${macro("gord", "Gordura", "--gord")}</div>
       </div>`;
   }
@@ -272,7 +333,9 @@
   function toast(message, { link, undo } = {}) {
     clearTimeout(toastTimer);
     toastUndo = undo || null;
-    $toast.innerHTML = `<p>${message}</p>${undo ? '<button type="button" data-toast="undo">Anular</button>' : ""}${link ? `<a href="${link.href}">${esc(link.label)}</a>` : ""}`;
+    // não mostra "Ver" se já estamos na página de destino
+    const showLink = link && link.href !== location.hash;
+    $toast.innerHTML = `<p>${message}</p>${undo ? '<button type="button" data-toast="undo">Anular</button>' : ""}${showLink ? `<a href="${link.href}">${esc(link.label)}</a>` : ""}`;
     $toast.hidden = false;
     toastTimer = setTimeout(() => { $toast.hidden = true; }, 5000);
   }
@@ -281,41 +344,62 @@
     if (e.target.closest("a, button")) $toast.hidden = true;
   });
 
-  // ------------------------------------------------------------------ refeição
-  function addToMeal(code, letter, mult, gramsValue = null) {
+  // ------------------------------------------------------------------ refeições (ações)
+  /** Adiciona à refeição indicada, ou à ativa; se não houver nenhuma, cria uma com nome pela hora. */
+  function addToMeal(code, letter, mult, gramsValue = null, mealId = activeId) {
     const s = byCode.get(code);
+    const meal = mealById(mealId) ?? createMeal();
+    activeId = meal.id;
     const item = { id: uid(), code, letter, mult, grams: gramsValue };
     meal.items.push(item);
-    saveMeal();
+    saveMeals();
     const p = portion(s, letter, mult);
-    toast(`<b>${esc(s.name)}</b> adicionado · ${gramsValue ? `${grams(gramsValue)} g` : `${fracLabel(mult)} × foto ${letter}`} · ${nf0.format(p.nut[N.kcal])} kcal`, {
-      link: { href: "#/refeicao", label: "Ver refeição" },
-      undo: () => { meal.items = meal.items.filter((x) => x.id !== item.id); saveMeal(); render({ keepScroll: true }); },
+    toast(`<b>${esc(s.name)}</b> adicionado a <b>${esc(mealName(meal))}</b> · ${gramsValue ? `${grams(gramsValue)} g` : `${fracLabel(mult)} × foto ${letter}`} · ${nf0.format(p.nut[N.kcal])} kcal`, {
+      link: { href: `#/refeicao/${meal.id}`, label: "Ver" },
+      undo: () => { meal.items = meal.items.filter((x) => x.id !== item.id); saveMeals(); render({ keepScroll: true }); },
     });
   }
 
-  function mealTotals() {
-    let nut = [0, 0, 0, 0, 0, 0, 0], total = 0, edible = 0;
-    for (const it of meal.items) {
-      const p = portion(byCode.get(it.code), it.letter, it.mult);
-      nut = addNut(nut, p.nut); total += p.total; edible += p.edible;
+  function mealTotals(mealList) {
+    let nut = [0, 0, 0, 0, 0, 0, 0], total = 0, edible = 0, count = 0;
+    for (const meal of mealList) {
+      for (const it of meal.items) {
+        const p = portion(byCode.get(it.code), it.letter, it.mult);
+        nut = addNut(nut, p.nut); total += p.total; edible += p.edible; count++;
+      }
     }
-    return { nut, total, edible };
+    return { nut, total, edible, count };
   }
 
-  function mealText() {
-    const t = mealTotals();
-    const lines = [`${meal.name || "Refeição"} — Manual Fotográfico IAN-AF`, ""];
+  function totalLines(t) {
+    const g = (k) => `${nf1.format(t.nut[N[k]])} g`;
+    return [
+      `${nf0.format(t.nut[N.kcal])} kcal · ${grams(t.total)} g (edível ${grams(t.edible)} g)`,
+      `Proteína ${g("prot")} · Hidratos de carbono ${g("hc")} (açúcares ${g("acu")}) · Gordura ${g("gord")} (AG saturados ${g("ags")}) · Fibra ${g("fibra")}`,
+    ];
+  }
+
+  function mealBlock(meal) {
+    const lines = [mealName(meal)];
     for (const it of meal.items) {
       const s = byCode.get(it.code);
       const p = portion(s, it.letter, it.mult);
       const q = it.grams ? `${grams(it.grams)} g` : `${fracLabel(it.mult)} × foto ${it.letter}`;
       lines.push(`• ${s.name} (${s.code}) — ${q}: ${grams(p.total)} g (edível ${grams(p.edible)} g), ${nf0.format(p.nut[N.kcal])} kcal`);
     }
-    const g = (k) => `${nf1.format(t.nut[N[k]])} g`;
-    lines.push("", `Total: ${nf0.format(t.nut[N.kcal])} kcal · ${grams(t.total)} g (edível ${grams(t.edible)} g)`,
-      `Proteína ${g("prot")} · Hidratos de carbono ${g("hc")} (açúcares ${g("acu")}) · Gordura ${g("gord")} (AG saturados ${g("ags")}) · Fibra ${g("fibra")}`);
+    const [a, b] = totalLines(mealTotals([meal]));
+    lines.push(`Total: ${a}`, b);
     return lines.join("\n");
+  }
+
+  function mealText(meal) {
+    return `${mealBlock(meal)}\n\n— Manual Fotográfico IAN-AF`;
+  }
+
+  function allMealsText() {
+    const blocks = meals.filter((m) => m.items.length).map(mealBlock);
+    const [a, b] = totalLines(mealTotals(meals));
+    return `${blocks.join("\n\n")}\n\nTOTAL DE TODAS AS REFEIÇÕES: ${a}\n${b}\n\n— Manual Fotográfico IAN-AF`;
   }
 
   async function copyText(text) {
@@ -352,8 +436,15 @@
         <div class="recent">${rec.map((s) => `<a href="#/serie/${s.code}"><img src="${s.thumb}" alt="" loading="lazy" width="360" height="270"><span>${esc(s.name)}</span></a>`).join("")}</div>` : ""}
       <div class="section-title"><h2>Alimentos e receitas</h2><span>${items.length} séries</span></div>
       <div class="chips" role="toolbar" aria-label="Filtrar por categoria">${chips}</div>
-      <div style="height:12px"></div>
+      ${activeTargetHint()}
       ${list(items)}`;
+  }
+
+  /** Indica para onde vai o "+" da lista (padrão Yazio: refeição selecionada no topo). */
+  function activeTargetHint() {
+    const m = activeMeal();
+    return `<p class="target">${I.plate}<span>O <b>+</b> adiciona a ${m ? `<a href="#/refeicao/${m.id}">${esc(mealName(m))}</a>` : "uma nova refeição"}</span>${meals.length > 1 ? `
+      <select data-action="target-meal" aria-label="Refeição de destino">${meals.map((x) => `<option value="${x.id}"${x.id === activeId ? " selected" : ""}>${esc(mealName(x))}</option>`).join("")}</select>` : ""}</p>`;
   }
 
   function viewSearch(q) {
@@ -365,7 +456,7 @@
     }
     return `
       <p class="meta">${series.length} ${series.length === 1 ? "resultado" : "resultados"}${measures.length ? ` e ${measures.length} ${measures.length === 1 ? "medida caseira" : "medidas caseiras"}` : ""} para “${esc(q)}”</p>
-      ${series.length ? list(series) : ""}
+      ${series.length ? activeTargetHint() + list(series) : ""}
       ${measures.length ? `<div class="section-title"><h2>Medidas caseiras</h2></div><div class="mlist">${measures.map(measureCard).join("")}</div>` : ""}`;
   }
 
@@ -374,7 +465,7 @@
     if (!items.length) {
       return `<div class="empty"><div class="empty__icon">${I.star}</div><strong>Ainda sem favoritos</strong>Abra um alimento e toque na estrela para o guardar aqui. Os favoritos ficam guardados apenas neste navegador.<br><a class="btn btn--primary" href="#/">${I.search} Pesquisar alimentos</a></div>`;
     }
-    return `<div class="section-title"><h2>Favoritos</h2><span>${items.length}</span></div>${list(items)}`;
+    return `<div class="section-title"><h2>Favoritos</h2><span>${items.length}</span></div>${activeTargetHint()}${list(items)}`;
   }
 
   function viewSerie(code) {
@@ -397,6 +488,7 @@
     const p = portion(s, st.letter, st.mult);
     const isFav = favs.has(code);
     const qtyText = st.mode === "g" ? `${grams(st.grams)} g` : `${fracLabel(st.mult)} × foto ${st.letter}`;
+    const target = activeMeal();
 
     return `
       <button class="back" type="button" data-action="back">${I.back} Voltar</button>
@@ -469,7 +561,12 @@
             ${nutTable(p.nut, "Informação nutricional")}
 
             <div class="addbar">
-              <button class="btn btn--primary" type="button" data-action="add">${I.plus} Adicionar à refeição <span>· ${qtyText}</span></button>
+              <select class="addbar__meal" data-action="target-meal" aria-label="Refeição de destino">
+                ${meals.map((m) => `<option value="${m.id}"${m.id === activeId ? " selected" : ""}>${esc(mealName(m))}</option>`).join("")}
+                ${target ? "" : `<option value="" selected>${esc(defaultMealName())} (nova)</option>`}
+                <option value="__new">＋ Nova refeição</option>
+              </select>
+              <button class="btn btn--primary" type="button" data-action="add">${I.plus} Adicionar <span>· ${qtyText}</span></button>
             </div>
           </section>
 
@@ -495,37 +592,88 @@
       </div>`;
   }
 
-  function viewMeal() {
-    const nameInput = `<input class="meal__name" type="text" value="${esc(meal.name)}" placeholder="Nome da refeição (ex.: Almoço)" data-action="meal-name" aria-label="Nome da refeição" maxlength="60">`;
-    const savedHtml = savedMeals.length ? `
-      <section class="panel">
-        <h2>As minhas refeições</h2>
-        <ul class="saved">
-          ${savedMeals.map((m) => {
-            const kcal = m.items.reduce((acc, it) => {
-              const s = byCode.get(it.code);
-              return s ? acc + portion(s, it.letter, it.mult).nut[N.kcal] : acc;
-            }, 0);
-            return `<li><div><b>${esc(m.name || "Refeição")}</b><span>${m.items.length} ${m.items.length === 1 ? "alimento" : "alimentos"} · ${nf0.format(kcal)} kcal</span></div>
-              <button class="btn" type="button" data-open-meal="${m.id}">Abrir</button>
-              <button class="icon-btn" type="button" data-delete-meal="${m.id}" aria-label="Apagar ${esc(m.name || "refeição")}">${I.trash}</button></li>`;
-          }).join("")}
-        </ul>
-      </section>` : "";
+  const presetChips = () => `
+    <div class="presets" role="group" aria-label="Criar refeição">
+      ${MEAL_PRESETS.map((p) => `<button class="chip" type="button" data-new-meal="${p}">${I.plus}${p}</button>`).join("")}
+      <button class="chip" type="button" data-new-meal="">${I.plus}Outra</button>
+    </div>`;
+
+  /** Lista de refeições (padrão Yazio/Lifesum: cartões por refeição + total do dia). */
+  function viewMeals() {
+    if (!meals.length) {
+      return `
+        <div class="section-title"><h2>Refeições</h2></div>
+        <div class="empty">
+          <div class="empty__icon">${I.plate}</div>
+          <strong>Crie a sua primeira refeição</strong>
+          Monte várias refeições (ex.: pequeno-almoço, almoço e jantar) com as porções do manual e veja os totais de energia e nutrientes de cada uma e de todas juntas.
+        </div>
+        ${presetChips()}`;
+    }
+    const all = mealTotals(meals);
+    return `
+      <div class="section-title"><h2>Refeições</h2><span>${meals.length} ${meals.length === 1 ? "refeição" : "refeições"}</span></div>
+      <div class="meals">
+        <div class="meals__list">
+          <ul class="mealcards">
+            ${meals.map((m) => {
+              const t = mealTotals([m]);
+              const photos = m.items.slice(0, 4).map((it) => photoOf(byCode.get(it.code), it.letter)).filter(Boolean);
+              return `<li><a class="mealcard" href="#/refeicao/${m.id}">
+                <div class="mealcard__thumbs">${photos.length ? photos.map((src) => `<img src="${src}" alt="" loading="lazy">`).join("") : `<span>${I.plate}</span>`}</div>
+                <div class="mealcard__body">
+                  <b>${esc(mealName(m))}${m.id === activeId ? ' <span class="pill-active">ativa</span>' : ""}</b>
+                  <small>${m.items.length ? `${m.items.length} ${m.items.length === 1 ? "alimento" : "alimentos"} · ${grams(t.total)} g` : "Vazia"}</small>
+                  ${m.items.length ? macroBar(t.nut, true) : ""}
+                </div>
+                <div class="mealcard__kcal">${nf0.format(t.nut[N.kcal])}<small>kcal</small></div>
+                <span class="mealcard__go">${I.chevron}</span>
+              </a></li>`;
+            }).join("")}
+          </ul>
+          <div class="label" style="margin-top:20px">Nova refeição</div>
+          ${presetChips()}
+        </div>
+
+        <aside class="meals__side">
+          <section class="panel">
+            <h2>${meals.length > 1 ? "Total de todas as refeições" : "Total"}</h2>
+            ${summary(all.nut, `${all.count} ${all.count === 1 ? "alimento" : "alimentos"}`, true)}
+            <div class="weights">
+              <div><small>Peso total</small><strong>${grams(all.total)} g</strong></div>
+              <div><small>Peso edível</small><strong>${grams(all.edible)} g</strong></div>
+            </div>
+            ${nutTable(all.nut)}
+            <div class="actions actions--single">
+              <button class="btn" type="button" data-action="copy-all"${all.count ? "" : " disabled"}>${I.copy} Copiar resumo de todas</button>
+            </div>
+          </section>
+        </aside>
+      </div>`;
+  }
+
+  function viewMeal(id) {
+    const meal = mealById(id);
+    if (!meal) return viewNotFound();
+    if (activeId !== id) { activeId = id; saveMeals(); }
+    const nameInput = `<input class="meal__name" type="text" value="${esc(meal.name)}" placeholder="Nome da refeição" data-action="meal-name" aria-label="Nome da refeição" maxlength="60">`;
+    const back = `<button class="back" type="button" data-action="to-meals">${I.back} Refeições</button>`;
+    const others = meals.filter((m) => m.id !== id);
 
     if (!meal.items.length) {
       return `
+        ${back}
         ${nameInput}
         <div class="empty">
           <div class="empty__icon">${I.plate}</div>
-          <strong>Monte uma refeição</strong>
-          Pesquise alimentos e toque em <b>+</b> na lista, ou abra um alimento, escolha a porção e toque em <b>Adicionar à refeição</b>. Os totais de energia e nutrientes são calculados automaticamente.
+          <strong>Refeição vazia</strong>
+          Pesquise alimentos e toque em <b>+</b> na lista, ou abra um alimento, escolha a porção e toque em <b>Adicionar</b>. Os alimentos vão para esta refeição.
           <br><button class="btn btn--primary" type="button" data-action="find">${I.search} Pesquisar alimentos</button>
-        </div>
-        ${savedHtml}`;
+          <br><button class="btn btn--danger" type="button" data-action="delete-meal" style="margin-top:8px">${I.trash} Apagar refeição</button>
+        </div>`;
     }
 
-    const t = mealTotals();
+    const t = mealTotals([meal]);
     const qtyOptions = (it) => {
       const opts = FRACTIONS.map((f) => `<option value="${f.v}"${!it.grams && f.v === it.mult ? " selected" : ""}>${f.t} × foto</option>`);
       if (it.grams) opts.unshift(`<option value="g" selected>${grams(it.grams)} g</option>`);
@@ -534,10 +682,11 @@
     };
 
     return `
+      ${back}
       <div class="meal">
         <div>
           ${nameInput}
-          <p class="meal__hint">A refeição fica guardada automaticamente neste navegador.</p>
+          <p class="meal__hint">Os alimentos que adicionar (+) vão para esta refeição. Tudo fica guardado neste navegador.</p>
           <ul class="items">
             ${meal.items.map((it) => {
               const s = byCode.get(it.code);
@@ -551,6 +700,7 @@
                   <div class="item__controls">
                     <select data-item-letter aria-label="Fotografia">${rowLetters(s).map((L) => `<option value="${L}"${L === it.letter ? " selected" : ""}>Foto ${L}</option>`).join("")}</select>
                     <select data-item-qty aria-label="Quantidade">${qtyOptions(it)}</select>
+                    ${others.length ? `<select data-item-move aria-label="Mover para outra refeição"><option value="" selected>Mover…</option>${others.map((m) => `<option value="${m.id}">→ ${esc(mealName(m))}</option>`).join("")}</select>` : ""}
                   </div>
                 </div>
                 <div class="item__side">
@@ -573,12 +723,11 @@
             </div>
             ${nutTable(t.nut)}
             <div class="actions">
-              <button class="btn btn--primary" type="button" data-action="save-meal">${I.save} ${meal.savedId ? "Atualizar refeição guardada" : "Guardar refeição"}</button>
               <button class="btn" type="button" data-action="copy-meal">${I.copy} Copiar resumo</button>
-              <button class="btn btn--danger" type="button" data-action="clear-meal">${I.trash} Limpar</button>
+              <button class="btn" type="button" data-action="duplicate-meal">${I.duplicate} Duplicar</button>
+              <button class="btn btn--danger" type="button" data-action="delete-meal">${I.trash} Apagar refeição</button>
             </div>
           </section>
-          ${savedHtml ? `<div style="height:16px"></div>${savedHtml}` : ""}
         </div>
       </div>`;
   }
@@ -647,7 +796,7 @@
           <li><b>Pesquisar:</b> escreva o nome do alimento — a pesquisa ignora acentos e tolera pequenos erros (ex.: “brocolos”, “bacalao”) — ou o código (ex.: “MQA077” ou “77”). No computador, carregue em <kbd>/</kbd> para ir à pesquisa.</li>
           <li><b>Fotografias:</b> em cada série estão por ordem crescente de quantidade (A, B, C…). A foto C corresponde, tipicamente, à porção média.</li>
           <li><b>Porção consumida:</b> tal como no inquérito, escolha uma fotografia e uma fração (¼, ½, ¾) ou múltiplo; ou indique diretamente os gramas.</li>
-          <li><b>Refeição:</b> toque em <b>+</b> na lista ou em <b>Adicionar à refeição</b> para somar alimentos e ver os totais de energia e nutrientes. Pode guardar refeições e copiar um resumo em texto.</li>
+          <li><b>Refeições:</b> crie várias refeições (pequeno-almoço, almoço, jantar…) e adicione alimentos com o <b>+</b> da lista ou com o botão <b>Adicionar</b>, escolhendo a refeição de destino. Veja os totais de cada refeição e de todas juntas, mova alimentos entre refeições, duplique refeições e copie um resumo em texto.</li>
           <li><b>Favoritos</b>, refeições e vistos recentemente ficam guardados apenas neste navegador.</li>
         </ul>
         <h2>Fonte</h2>
@@ -669,7 +818,7 @@
     const [, name = "", arg = ""] = location.hash.replace(/^#/, "").split("/");
     switch (name) {
       case "serie": return { name: "serie", tab: "foods", arg: decodeURIComponent(arg).toUpperCase() };
-      case "refeicao": return { name: "meal", tab: "meal" };
+      case "refeicao": return arg ? { name: "meal", tab: "meal", arg: decodeURIComponent(arg) } : { name: "meals", tab: "meal" };
       case "favoritos": return { name: "favs", tab: "favs" };
       case "medidas": return arg ? { name: "measure", tab: "measures", arg: decodeURIComponent(arg).toUpperCase() } : { name: "measures", tab: "measures" };
       case "sobre": return { name: "about", tab: "about" };
@@ -683,7 +832,8 @@
       foods: viewFoods,
       favs: viewFavs,
       serie: () => viewSerie(current.arg),
-      meal: viewMeal,
+      meals: viewMeals,
+      meal: () => viewMeal(current.arg),
       measures: viewMeasures,
       measure: () => viewMeasure(current.arg),
       about: viewAbout,
@@ -695,9 +845,11 @@
     });
     const s = current.name === "serie" && byCode.get(current.arg);
     const m = current.name === "measure" && measureByCode.get(current.arg);
+    const ml = current.name === "meal" && mealById(current.arg);
     document.title = s ? `${s.name} · Manual Fotográfico IAN-AF`
       : m ? `${m.name} · Manual Fotográfico IAN-AF`
-      : current.name === "meal" ? "Refeição · Manual Fotográfico IAN-AF"
+      : ml ? `${mealName(ml)} · Manual Fotográfico IAN-AF`
+      : current.name === "meals" ? "Refeições · Manual Fotográfico IAN-AF"
       : "Manual Fotográfico IAN-AF";
     if (keepScroll) window.scrollTo(0, y);
   }
@@ -706,10 +858,10 @@
     scrollPositions[`${current.name}/${current.arg ?? ""}`] = window.scrollY;
     current = parseRoute();
     render();
-    if (current.name === "meal") $toast.querySelector('a[href="#/refeicao"]')?.remove(); // já estamos lá
+    $toast.querySelector(`a[href="${CSS.escape(location.hash)}"]`)?.remove(); // já estamos na página do link
     // volta à posição anterior das listas (útil no telemóvel ao regressar de um alimento)
     const saved = scrollPositions[`${current.name}/${current.arg ?? ""}`];
-    window.scrollTo(0, ["foods", "favs", "measures"].includes(current.name) && saved ? saved : 0);
+    window.scrollTo(0, ["foods", "favs", "measures", "meals"].includes(current.name) && saved ? saved : 0);
   }
 
   window.addEventListener("hashchange", () => { navigatedInside = true; onRoute(); });
@@ -766,9 +918,17 @@
     if (!t) return;
     const d = t.dataset;
     const rerender = () => render({ keepScroll: true });
+    const openMeal = current.name === "meal" ? mealById(current.arg) : null;
 
     if (d.cat !== undefined) { category = d.cat || null; render(); return; }
-    if (d.add) { const s = byCode.get(d.add); addToMeal(s.code, defaultLetter(s), 1); flashAdded(t); return; }
+    if (d.add) {
+      const s = byCode.get(d.add);
+      const hadMeal = !!activeMeal();
+      addToMeal(s.code, defaultLetter(s), 1);
+      // a primeira adição cria uma refeição: atualiza a indicação de destino
+      if (!hadMeal) rerender(); else flashAdded(t);
+      return;
+    }
     if (d.letter) { selectLetter(d.letter); rerender(); return; }
     if (d.mult) { detailState.mult = Number(d.mult); rerender(); return; }
     if (d.step) { detailState.mult = Math.max(0.25, +(detailState.mult + Number(d.step)).toFixed(3)); rerender(); return; }
@@ -783,69 +943,60 @@
     if (d.mletter) { measureState.letter = d.mletter; rerender(); return; }
     if (d.frac) { measureState.frac = Number(d.frac); rerender(); return; }
     if (d.mstep) { measureState.mult = Math.max(1, measureState.mult + Number(d.mstep)); rerender(); return; }
-    if (d.remove) {
-      const idx = meal.items.findIndex((x) => x.id === d.remove);
-      const [removed] = meal.items.splice(idx, 1);
-      saveMeal(); rerender();
-      toast(`${esc(byCode.get(removed.code).name)} removido`, { undo: () => { meal.items.splice(idx, 0, removed); saveMeal(); rerender(); } });
+    if (d.newMeal !== undefined) {
+      const meal = createMeal(uniqueName(d.newMeal || `Refeição ${meals.length + 1}`));
+      location.hash = `#/refeicao/${meal.id}`;
       return;
     }
-    if (d.openMeal) {
-      const m = savedMeals.find((x) => x.id === d.openMeal);
-      const previous = structuredClone(meal);
-      meal = { name: m.name, items: structuredClone(m.items).filter((it) => byCode.has(it.code)), savedId: m.id };
-      saveMeal(); render();
-      toast(`Refeição “${esc(m.name || "Refeição")}” aberta`, previous.items.length ? { undo: () => { meal = previous; saveMeal(); render(); } } : {});
-      return;
-    }
-    if (d.deleteMeal) {
-      const idx = savedMeals.findIndex((x) => x.id === d.deleteMeal);
-      const [removed] = savedMeals.splice(idx, 1);
-      const wasCurrent = meal.savedId === removed.id;
-      if (wasCurrent) meal.savedId = null;
-      store.set("mqa:meals", savedMeals); saveMeal(); rerender();
-      toast(`Refeição “${esc(removed.name || "Refeição")}” apagada`, {
-        undo: () => {
-          savedMeals.splice(idx, 0, removed);
-          if (wasCurrent) meal.savedId = removed.id;
-          store.set("mqa:meals", savedMeals); saveMeal(); rerender();
-        },
-      });
+    if (d.remove && openMeal) {
+      const idx = openMeal.items.findIndex((x) => x.id === d.remove);
+      const [removed] = openMeal.items.splice(idx, 1);
+      saveMeals(); rerender();
+      toast(`${esc(byCode.get(removed.code).name)} removido`, { undo: () => { openMeal.items.splice(idx, 0, removed); saveMeals(); rerender(); } });
       return;
     }
 
     switch (d.action) {
       case "back": navigatedInside ? history.back() : (location.hash = current.name === "measure" ? "#/medidas" : "#/"); break;
+      case "to-meals": location.hash = "#/refeicao"; break;
       case "fav": toggleFav(current.arg); rerender(); break;
       case "zoom": openZoom(); break;
       case "dismiss-info": infoDismissed = true; store.set("mqa:info-dismissed", true); rerender(); break;
       case "add": {
         const st = detailState;
+        const hadMeal = !!activeMeal();
         addToMeal(current.arg, st.letter, st.mult, st.mode === "g" ? st.grams : null);
+        if (!hadMeal) rerender(); // a refeição criada passa a aparecer no seletor
         break;
       }
       case "find":
         location.hash = "#/";
         setTimeout(() => { $q.focus(); window.scrollTo(0, 0); }, 50);
         break;
-      case "save-meal": {
-        if (!meal.name.trim()) meal.name = `Refeição ${savedMeals.length + 1}`;
-        const snapshot = { id: meal.savedId || uid(), name: meal.name, items: structuredClone(meal.items), savedAt: Date.now() };
-        const idx = savedMeals.findIndex((x) => x.id === snapshot.id);
-        idx >= 0 ? (savedMeals[idx] = snapshot) : savedMeals.unshift(snapshot);
-        meal.savedId = snapshot.id;
-        store.set("mqa:meals", savedMeals); saveMeal(); rerender();
-        toast(`Refeição “${esc(meal.name)}” guardada`);
+      case "copy-meal":
+        copyText(mealText(openMeal)).then((ok) => toast(ok ? "Resumo copiado — pode colar num documento ou mensagem" : "Não foi possível copiar"));
+        break;
+      case "copy-all":
+        copyText(allMealsText()).then((ok) => toast(ok ? "Resumo de todas as refeições copiado" : "Não foi possível copiar"));
+        break;
+      case "duplicate-meal": {
+        const copy = { id: uid(), name: uniqueName(`${mealName(openMeal)} (cópia)`), items: openMeal.items.map((it) => ({ ...it, id: uid() })) };
+        meals.splice(meals.indexOf(openMeal) + 1, 0, copy);
+        activeId = copy.id;
+        saveMeals();
+        location.hash = `#/refeicao/${copy.id}`;
+        toast(`Refeição duplicada: <b>${esc(copy.name)}</b>`);
         break;
       }
-      case "copy-meal":
-        copyText(mealText()).then((ok) => toast(ok ? "Resumo copiado — pode colar num documento ou mensagem" : "Não foi possível copiar"));
-        break;
-      case "clear-meal": {
-        const previous = structuredClone(meal);
-        meal = { name: "", items: [], savedId: null };
-        saveMeal(); render();
-        toast("Refeição limpa", { undo: () => { meal = previous; saveMeal(); render(); } });
+      case "delete-meal": {
+        const idx = meals.indexOf(openMeal);
+        meals.splice(idx, 1);
+        if (activeId === openMeal.id) activeId = meals[Math.max(0, idx - 1)]?.id ?? null;
+        saveMeals();
+        location.hash = "#/refeicao";
+        toast(`Refeição <b>${esc(mealName(openMeal))}</b> apagada`, {
+          undo: () => { meals.splice(idx, 0, openMeal); activeId = openMeal.id; saveMeals(); render(); },
+        });
         break;
       }
     }
@@ -853,8 +1004,19 @@
 
   $main.addEventListener("change", (e) => {
     const el = e.target;
+    if (el.dataset.action === "target-meal") {
+      if (el.value === "__new") {
+        const meal = createMeal();
+        toast(`Refeição <b>${esc(meal.name)}</b> criada — os alimentos vão para ela`, { link: { href: `#/refeicao/${meal.id}`, label: "Ver" } });
+      } else if (el.value) {
+        activeId = el.value; saveMeals();
+      }
+      render({ keepScroll: true });
+      return;
+    }
     const itemEl = el.closest("[data-item]");
     if (itemEl) {
+      const meal = mealById(current.arg);
       const it = meal.items.find((x) => x.id === itemEl.dataset.item);
       const s = byCode.get(it.code);
       if (el.matches("[data-item-letter]")) {
@@ -863,8 +1025,19 @@
         if (it.grams) it.mult = it.grams / s.total[rowLetters(s).indexOf(it.letter)];
       } else if (el.matches("[data-item-qty]") && el.value !== "g") {
         it.mult = Number(el.value); it.grams = null;
+      } else if (el.matches("[data-item-move]") && el.value) {
+        const dest = mealById(el.value);
+        const idx = meal.items.indexOf(it);
+        meal.items.splice(idx, 1);
+        dest.items.push(it);
+        saveMeals(); render({ keepScroll: true });
+        toast(`${esc(s.name)} movido para <b>${esc(mealName(dest))}</b>`, {
+          link: { href: `#/refeicao/${dest.id}`, label: "Ver" },
+          undo: () => { dest.items.splice(dest.items.indexOf(it), 1); meal.items.splice(idx, 0, it); saveMeals(); render({ keepScroll: true }); },
+        });
+        return;
       }
-      saveMeal(); render({ keepScroll: true });
+      saveMeals(); render({ keepScroll: true });
       return;
     }
     if (el.dataset.action === "meal-name") return;
@@ -878,7 +1051,10 @@
   });
 
   $main.addEventListener("input", (e) => {
-    if (e.target.dataset.action === "meal-name") { meal.name = e.target.value; saveMeal(); }
+    if (e.target.dataset.action === "meal-name") {
+      mealById(current.arg).name = e.target.value;
+      saveMeals();
+    }
   });
   $main.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && e.target.matches("input[data-action]")) e.target.blur(); // confirma o valor
@@ -938,6 +1114,6 @@
     touchX = null;
   });
 
-  updateBadge();
+  saveMeals(); // grava a migração do formato antigo, se tiver havido
   onRoute();
 })();

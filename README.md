@@ -67,7 +67,7 @@ nas tabelas (no manual original só acontece com MQA108 Chop suey).
 - Fotografias A–H com ampliação (deslizar para mudar de foto no telemóvel)
 - Porção consumida **por fotografia** (foto × ¼, ½, ¾, 1, 1½, 2, 3 ou outro valor) ou **em gramas**
 - Energia, distribuição energética (proteína/hidratos/gordura), peso total, peso edível e composição nutricional
-- **Montar refeição**: somar alimentos, ajustar foto/quantidade de cada um, ver totais, guardar refeições, copiar um resumo em texto e anular remoções
+- **Várias refeições** (pequeno-almoço, almoço, jantar…): criar com um toque, escolher a refeição de destino ao adicionar, ajustar foto/quantidade, mover alimentos entre refeições, duplicar, apagar (com anular), ver o total de cada refeição e de todas juntas e copiar um resumo em texto
 - Medidas caseiras com calculadora de volume
 - Favoritos, refeições e vistos recentemente (guardados no navegador)
 - Aviso sobre o objetivo do site (ajudar os estudantes da FCNAUP a utilizar o manual)

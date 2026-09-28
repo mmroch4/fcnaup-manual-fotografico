@@ -317,7 +317,13 @@ main:focus { outline: none; }
   }
   body.has-addbar main { padding-bottom: 96px; }
 }
-.addbar .btn { height: 50px; font-size: 16px; width: 100%; }
+.addbar { display: flex; gap: 8px; }
+.addbar .btn { height: 50px; font-size: 16px; flex: 1; min-width: 0; }
+.addbar .btn span { overflow: hidden; text-overflow: ellipsis; }
+.addbar__meal {
+  flex: 0 1 42%; min-width: 0; height: 50px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--surface-2); padding: 0 10px; font-size: 15px; font-weight: 600; text-overflow: ellipsis;
+}
 .addbar .btn span { opacity: .8; font-weight: 500; }
 
 /* tabela completa */
@@ -358,7 +364,9 @@ table.full tbody tr[aria-selected="true"] td { background: var(--accent-soft); }
 .add-more:hover { background: var(--accent-soft); border-color: var(--accent); }
 .add-more svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
-.actions .btn--primary { grid-column: 1 / -1; }
+.actions .btn--primary, .actions .btn--danger { grid-column: 1 / -1; }
+.actions--single { grid-template-columns: 1fr; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
 .saved { list-style: none; margin: 0; padding: 0; }
 .saved li { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .saved li:last-child { border-bottom: 0; }
@@ -366,6 +374,41 @@ table.full tbody tr[aria-selected="true"] td { background: var(--accent-soft); }
 .saved b { display: block; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .saved span { font-size: 13px; color: var(--muted); }
 .saved .btn { height: 36px; padding: 0 12px; font-size: 14px; }
+
+/* destino do "+" nas listas */
+.target { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0; font-size: 14px; color: var(--muted); }
+.target > svg { width: 18px; height: 18px; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.target a { font-weight: 650; }
+.target select { height: 32px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); padding: 0 6px; font-size: 14px; max-width: 100%; }
+
+/* lista de refeições (padrão Yazio/Lifesum) */
+.meals { display: grid; gap: 16px; }
+.meals > * { min-width: 0; }
+@media (min-width: 720px) { .meals { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; gap: 20px; } .meals__side { position: sticky; top: 124px; } }
+@media (min-width: 1024px) { .meals { gap: 24px; } .meals__side { top: 90px; } }
+.mealcards { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.mealcard {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 12px; align-items: center;
+  background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 10px 8px 10px 10px;
+  text-decoration: none; color: inherit; transition: box-shadow .15s;
+}
+.mealcard:hover { box-shadow: var(--shadow-lg); }
+.mealcard__thumbs { width: 72px; height: 54px; border-radius: 10px; overflow: hidden; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--surface-2); }
+.mealcard__thumbs img { width: 100%; height: 100%; object-fit: cover; }
+.mealcard__thumbs img:only-child { grid-column: 1 / -1; }
+.mealcard__thumbs span { grid-column: 1 / -1; display: grid; place-items: center; color: var(--faint); }
+.mealcard__thumbs svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.mealcard__body b { display: block; font-size: 16px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mealcard__body small { display: block; color: var(--muted); font-size: 13px; }
+.mealcard__kcal { font-weight: 750; font-size: 18px; text-align: right; font-variant-numeric: tabular-nums; }
+.mealcard__kcal small { display: block; font-size: 12px; color: var(--muted); font-weight: 500; }
+.mealcard__go svg { width: 18px; height: 18px; fill: none; stroke: var(--faint); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pill-active { display: inline-block; vertical-align: 2px; margin-left: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 6px; }
+.macrobar--sm { height: 5px; margin: 6px 0 0; max-width: 180px; }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.presets .chip { display: inline-flex; align-items: center; gap: 4px; }
+.presets .chip svg { width: 15px; height: 15px; fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; }
+.empty + .presets { justify-content: center; }
 
 /* ================================================================ medidas caseiras */
 .mlist { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
@@ -428,3 +471,6 @@ body.has-addbar .toast { bottom: calc(var(--tabbar) + env(safe-area-inset-bottom
 .foot__links a { color: var(--text); }
 .foot a { font-weight: 650; }
 .foot__src { font-size: 12px; color: var(--faint); }
+@media (max-width: 480px) {
+  .addbar .btn span { display: none; } /* a quantidade já aparece no resumo acima */
+}
