@@ -46,7 +46,7 @@ A pasta `site/` pode ser publicada tal como está em qualquer servidor de fichei
 (~19 MB, quase tudo fotografias).
 
 > O manual indica que as imagens não podem ser publicadas sem autorização prévia dos autores
-> (geral@ian-af.up.pt). Obtenha essa autorização antes de pôr o site online.
+> (geral@ian-af.up.pt). Este site é publicado com a autorização dos autores.
 
 ## Regenerar os dados a partir do PDF
 
@@ -60,7 +60,8 @@ python3 -m venv .venv && .venv/bin/pip install pymupdf pillow
 O script localiza cada série pelo código no título da página (o índice do PDF tem alguns
 números de página errados), associa cada foto à etiqueta `MQAxxx-A…H` por posição e lê as
 Tabelas 1–4. No fim, lista as séries em que o número de fotos difere do número de linhas
-nas tabelas (no manual original só acontece com MQA108 Chop suey).
+nas tabelas (no manual original só acontece com MQA108 Chop suey, resolvido em `TRUNCATE`).
+As gralhas do manual corrigidas com o acordo dos autores estão em `CORRECTIONS`, no próprio script.
 
 ## Funcionalidades
 
@@ -73,7 +74,7 @@ nas tabelas (no manual original só acontece com MQA108 Chop suey).
 - Medidas caseiras com calculadora de volume
 - Favoritos, refeições e vistos recentemente (guardados no navegador)
 - Aviso sobre o objetivo do site (ajudar os estudantes da FCNAUP a utilizar o manual)
-- Notas nas séries em que os valores do manual parecem ter gralhas (os valores são mantidos como no original)
+- Gralhas evidentes do manual corrigidas, com nota na série quando é útil explicar a diferença
 
 ## Referências de design
 

@@ -12,12 +12,10 @@
   // índices em cada linha de s.nutrition (ordem da Tabela 3 do manual)
   const N = { kcal: 0, prot: 1, hc: 2, acu: 3, gord: 4, ags: 5, fibra: 6 };
 
-  // Observações sobre valores do manual que parecem gralhas (mantidos tal como no original).
+  // Observações sobre valores corrigidos em relação ao manual (correções em tools/extract.py).
   const NOTES = {
-    MQA020: "No manual, o peso total da foto B (60 g) é inferior ao peso edível (95 g); provável gralha — na série MQA021 o valor é 96 g.",
-    MQA031: "No manual, o peso total da foto B (142 g) parece ser uma gralha: o peso edível correspondente é 20 g.",
-    MQA032: "No manual, o peso total da foto B (200 g) parece ser uma gralha: o peso edível correspondente é 20 g.",
-    MQA108: "O manual apresenta 6 porções nas tabelas (A–F), mas só 5 fotografias (A–E).",
+    MQA020: "O peso total da foto B foi corrigido para 96 g (valor da série equivalente MQA021). No manual está 60 g, inferior ao peso edível (95 g).",
+    MQA155: "Os pesos totais das fotos B, C e D foram corrigidos para 91, 181 e 275 g (peso edível + cerca de 2 g de espeto). No manual estão 87, 173 e 269 g, inferiores ao peso edível.",
     MQA062: "Nesta série cada fotografia mostra um tipo/fatia de pão diferente, por isso os pesos não são crescentes.",
     MQA062B: "Nesta série cada fotografia mostra um tipo de pão diferente, por isso os pesos não são crescentes.",
     MQA062C: "Nesta série os pedaços têm formatos diferentes, por isso os pesos não são estritamente crescentes.",
@@ -801,7 +799,7 @@
         </ul>
         <h2>Fonte</h2>
         <p>Torres D, Faria N, Sousa N, Teixeira S, Soares R, Amorim H, Guiomar S, Lobato L, Oliveira C, Correia D, Carvalho C, Vilela S, Severo M, Lopes C. <i>Inquérito Alimentar Nacional e de Atividade Física, IAN-AF 2015-2016: Manual Fotográfico de Quantificação de Alimentos.</i> Universidade do Porto, 2017. ISBN: 978-989-746-182-8. Disponível em <a href="https://ian-af.up.pt" target="_blank" rel="noopener">www.ian-af.up.pt</a>.</p>
-        <p>As imagens e os dados pertencem aos autores do manual. Os valores são reproduzidos tal como no original; quando parecem existir gralhas, é apresentada uma nota na respetiva série. A distribuição da energia (proteína, hidratos, gordura) é calculada com os fatores 4, 4 e 9 kcal/g.</p>
+        <p>As imagens e os dados pertencem aos autores do manual. Os valores são reproduzidos do original, com a correção de algumas gralhas evidentes, de acordo com os autores. A distribuição da energia (proteína, hidratos, gordura) é calculada com os fatores 4, 4 e 9 kcal/g.</p>
         <h2>Autor do site</h2>
         <p>Criado por <a href="https://miguelrocha.dev" target="_blank" rel="noopener">Miguel Rocha</a> — <a href="https://miguelrocha.dev" target="_blank" rel="noopener">miguelrocha.dev</a>.</p>
       </article>`;

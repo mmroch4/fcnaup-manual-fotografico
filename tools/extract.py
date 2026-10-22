@@ -214,6 +214,21 @@ for p in range(199, 205):
         })
 measures.sort(key=lambda m: m["code"])
 
+# ---------------------------------------------------------------- correções
+# Gralhas do manual corrigidas com o acordo dos autores: (série, coluna, índice) -> valor
+CORRECTIONS = {
+    ("MQA020", "total", 1): 96,  # 60 g no manual, menos que o edível (95 g); valor da MQA021
+    ("MQA031", "total", 1): 28,  # 142 g no manual para 20 g edíveis (~70% nas outras fotos)
+    ("MQA032", "total", 1): 28,  # 200 g no manual, idem
+    # MQA155: total c/ espeto < edível em B–D; a nutrição bate com o edível, por isso
+    # corrige-se o total para edível + espeto (~2 g, pelas fotos A e E)
+    ("MQA155", "total", 1): 91,  # 87 g no manual
+    ("MQA155", "total", 2): 181,  # 173 g no manual
+    ("MQA155", "total", 3): 275,  # 269 g no manual
+}
+# séries com linhas nas tabelas sem fotografia correspondente: ficam só as linhas com foto
+TRUNCATE = {"MQA108"}  # Chop suey: tabelas A–F, fotos A–E
+
 # ---------------------------------------------------------------- montagem
 problems = []
 for s in series:
@@ -222,6 +237,12 @@ for s in series:
     s["edible"] = edible.get(c, [])
     s["nutrition"] = nutrition.get(c, [])
     n = len(s["photos"])
+    if c in TRUNCATE:
+        for key in ("total", "edible", "nutrition"):
+            s[key] = s[key][:n]
+    for (code, key, i), value in CORRECTIONS.items():
+        if code == c:
+            s[key][i] = value
     for key in ("total", "edible", "nutrition"):
         if len(s[key]) != n:
             problems.append(f"{c}: {n} fotos, {len(s[key])} valores em {key}")
